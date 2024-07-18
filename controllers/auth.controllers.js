@@ -51,3 +51,55 @@ exports.signup = async (req, res) => {
     });
   }
 };
+
+//Signin
+exports.signin = async(req,res) =>{
+  //Todo
+  const {username,password} = req.body;
+  if (!username || !password) {
+    res.status(400).send({
+      message: "Please provide all required fields",
+    });
+    return;
+  }
+  //Select *from User where username = "username"
+  await User.findOne({
+  where: {username:username}
+  }).then((user)=>{
+    if(!user){
+      return res.status(404).send({message : "User not found"});
+    }
+    const passwordIsValid = bcrypt.compareSync(password,user.password);
+    if(!passwordIsValid){
+      return res.status(401).send({
+        accessToken:null,
+        message:":Invalid password",
+      });
+    }
+    const token = jwt.sign({id:user.id},config.secret,{
+      expiresIn:86400
+    });
+
+    const authorities = [];
+    user.getRole().then((roles)=>{
+      for(let i = 0; i <roles.length; i++){
+        authorities.push("ROLES_"+roles[i].name.toUpperCase());
+      }
+      res.status(200).send({
+        id:user.id,
+        email:user.name,
+        roles:authorities,
+        accessToken:token,
+      });
+    });
+
+  })
+  .catch((error)=>{
+    res.status(500).send({
+      message:
+        error.message ||
+        "Something errorerror occurred while registering a new user",
+    });
+  })
+
+};
