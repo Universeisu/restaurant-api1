@@ -1,8 +1,8 @@
 const User = require("../models/user.models");
 const Role = require("../models/role.models");
-const { Model } = require("sequelize");
+const { Op } = require("sequelize");
 
-checkduplicateUsernameOrEmail = async(req,res,next) =>{
+checkDuplicateUsernameOrEmail = async(req,res,next) =>{
     //check username
     await User.findOne({
         where:{
@@ -51,7 +51,7 @@ checkRolesExisted = async(req,res,next)=>{
 
 const verifySignup ={
     checkRolesExisted,
-    checkduplicateUsernameOrEmail,
+    checkDuplicateUsernameOrEmail,
 };
 
 module.exports = verifySignup;
