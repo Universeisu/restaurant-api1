@@ -8,8 +8,8 @@ const { Op } = require("sequelize");
 
 // Register a new user
 exports.signup = async (req, res) => {
-  const { username, email, password } = req.body;
-  if (!username || !email || !password) {
+  const { email, username, password } = req.body;
+  if (!email || !username || !password) {
     res.status(400).send({
       message: "Please provide all required fields",
     });
@@ -23,39 +23,41 @@ exports.signup = async (req, res) => {
     password: bcrypt.hashSync(password, 10), // Use appropriate salt rounds
   };
 
-  try {
-    // Save user in the database
-    const user = await User.create(newUser);
-
-    if (req.body.roles) {
-      const roles = await Role.findAll({
-        where: {
-          name: { [Op.or]: req.body.roles },
-        },
+  await User.create(newUser)
+    .then((user) => {
+      if (req.body.roles) {
+        Role.findAll({
+          where: {
+            name: { [Op.or]: req.body.roles },
+          },
+        }).then((roles) => {
+          user.setRoles(roles).then(() => {
+            res.send({
+              message: "User registered successfully!",
+            });
+          });
+        });
+      } else {
+        //set default role to "user" id = 1
+        user.setRoles([1]).then(() => {
+          res.send({
+            message: "User registered successfully!",
+          });
+        });
+      }
+    })
+    .catch((error) => {
+      res.status(500).send({
+        message:
+          error.message || "Something error occured while creating the user.",
       });
-      await user.setRoles(roles);
-      res.send({
-        message: "User registered successfully!",
-      });
-    } else {
-      // Set default role to "user" id=1
-      await user.setRoles([1]);
-      res.send({
-        message: "User registered successfully!",
-      });
-    }
-  } catch (error) {
-    res.status(500).send({
-      message:
-        error.message || "An error occurred while registering a new user",
     });
-  }
 };
 
 //Signin
-exports.signin = async(req,res) =>{
+exports.signin = async (req, res) => {
   //Todo
-  const {username,password} = req.body;
+  const { username, password } = req.body;
   if (!username || !password) {
     res.status(400).send({
       message: "Please provide all required fields",
@@ -64,42 +66,42 @@ exports.signin = async(req,res) =>{
   }
   //Select *from User where username = "username"
   await User.findOne({
-  where: {username:username}
-  }).then((user)=>{
-    if(!user){
-      return res.status(404).send({message : "User not found"});
-    }
-    const passwordIsValid = bcrypt.compareSync(password,user.password);
-    if(!passwordIsValid){
-      return res.status(401).send({
-        accessToken:null,
-        message:":Invalid password",
-      });
-    }
-    const token = jwt.sign({id:user.id},config.secret,{
-      expiresIn:86400
-    });
-
-    const authorities = [];
-    user.getRole().then((roles)=>{
-      for(let i = 0; i <roles.length; i++){
-        authorities.push("ROLES_"+roles[i].name.toUpperCase());
+    where: { username: username },
+  })
+    .then((user) => {
+      if (!user) {
+        return res.status(404).send({ message: "User not found" });
       }
-      res.status(200).send({
-        id:user.id,
-        email:user.name,
-        roles:authorities,
-        accessToken:token,
+      const passwordIsValid = bcrypt.compareSync(password, user.password);
+      if (!passwordIsValid) {
+        return res.status(401).send({
+          accessToken: null,
+          message: ":Invalid password",
+        });
+      }
+      const token = jwt.sign({ id: user.id }, config.secret, {
+        expiresIn: 86400,
+      });
+
+      const authorities = [];
+      user.getRole().then((roles) => {
+        for (let i = 0; i < roles.length; i++) {
+          authorities.push("ROLES_" + roles[i].name.toUpperCase());
+        }
+        res.status(200).send({
+          id: user.username,
+          username: user.username,
+          email: user.email,
+          roles: authorities,
+          accessToken: token,
+        });
+      });
+    })
+    .catch((error) => {
+      res.status(500).send({
+        message:
+          error.message ||
+          "Something errorerror occurred while registering a new user",
       });
     });
-
-  })
-  .catch((error)=>{
-    res.status(500).send({
-      message:
-        error.message ||
-        "Something errorerror occurred while registering a new user",
-    });
-  })
-
 };

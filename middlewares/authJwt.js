@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
-const config = require("../config/auth.config");
+const config = require("../config/auth.consfig");
 const db = require("../models");
+const { use } = require("../routers/auth.router");
 const User = db.User;
 
 //verify token
@@ -8,16 +9,17 @@ verifyToken = (req, res, next) => {
   let token = req.headers["x-access-token"];
   //1st verify
   if (!token) {
-    return res.status(403).send({ message: "No token provided!" });
+    return res.status(403).send({ message: "No token provided" });
   }
   jwt.verify(token, config.secret, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "Unauthorized!" });
+      return res.status(401).sen({ message: "Unauthorized!" });
     }
-    req.userID = decoded.id;
+    req.userId = decoded.id;
     next();
   });
 };
+
 //isAdmin?
 isAdmin = (req, res, next) => {
   User.findByPk(req.userId).then((user) => {
@@ -30,11 +32,12 @@ isAdmin = (req, res, next) => {
       }
       return res
         .status(401)
-        .send({ message: "Unauthorized access,require Admin Role!" });
+        .send({ message: "Unauthorized,require Admin role" });
     });
   });
 };
-//isMod?
+
+//isMod
 isMod = (req, res, next) => {
   User.findByPk(req.userId).then((user) => {
     user.getRoles().then((roles) => {
@@ -46,12 +49,12 @@ isMod = (req, res, next) => {
       }
       return res
         .status(401)
-        .send({ Message: "Unauthorized access,require Moderator Role!" });
+        .send({ message: "Unauthorized,require Admin role" });
     });
   });
 };
 
-//IaAdminOrMod
+//IsAddminOrmod?
 isModOrAdmin = (req, res, next) => {
   User.findByPk(req.userId).then((user) => {
     user.getRoles().then((roles) => {
@@ -62,8 +65,8 @@ isModOrAdmin = (req, res, next) => {
         }
       }
       return res
-        .status(403)
-        .send({ message: "Unauthorized access, Require ModOrAdmin Role!!" });
+        .status(401)
+        .send({ message: "Unauthorized,require Admin or moderator role" });
     });
   });
 };

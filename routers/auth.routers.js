@@ -5,10 +5,14 @@ const { verifySignup } = require("../middlewares");
 
 router.use((req, res, next) => {
   res.header(
-    "Access-control-Allow-Headers",
+    "Access-Control-Allow-Headers",
     "x-access-token,Origin,Content-Type,Accept"
   );
-  
+  console.log(
+    verifySignup.checkDuplicateUsernameOrEmail,
+    verifySignup.checkRolesExisted
+  );
+  next();
 });
 
 router.post(
@@ -19,4 +23,3 @@ router.post(
 router.post("/signin", authController.signin);
 
 module.exports = router;
-
